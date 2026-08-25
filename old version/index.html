@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Calendar, live weather and worldwide live radio, in one app.">
+<meta name="theme-color" content="#12141a">
+<title>My Apps — Calendar · Weather · Radio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================== HUB NAV ============================== -->
+<header class="hub-nav">
+  <div class="hub-brand"><span>&#9689;</span>My Apps</div>
+  <nav class="hub-tabs">
+    <button class="hub-tab active" data-view="calendar">&#128197; Calendar</button>
+    <button class="hub-tab" data-view="weather">&#127780;&#65039; Weather</button>
+    <button class="hub-tab" data-view="radio">&#128250; Radio<span class="dot"></span></button>
+    <button class="hub-tab" data-view="iwatch">&#127916; I-WATCH</button>
+  </nav>
+</header>
+
+<!-- ============================== CALENDAR VIEW ============================== -->
+<div class="view view-calendar active" data-view-panel="calendar">
+  <div class="cal-shell">
+    <aside class="side" id="side">
+      <div class="brand"><i>M</i>Monthly</div>
+      <button class="newbtn" id="new-btn">+ New event</button>
+
+      <div class="mini">
+        <div class="mini-h">
+          <button id="mini-prev" aria-label="Previous month">&lsaquo;</button>
+          <b id="mini-title" style="text-align:center">&nbsp;</b>
+          <button id="mini-next" aria-label="Next month">&rsaquo;</button>
+        </div>
+        <table>
+          <thead><tr><th>S</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th></tr></thead>
+          <tbody id="mini-body"></tbody>
+        </table>
+      </div>
+
+      <div class="legend">
+        <h4>Categories</h4>
+        <ul>
+          <li data-cat="work"><i style="background:#4B5BD7"></i>Work</li>
+          <li data-cat="personal"><i style="background:#12A594"></i>Personal</li>
+          <li data-cat="health"><i style="background:#E0733D"></i>Health</li>
+          <li data-cat="social"><i style="background:#C2418E"></i>Social</li>
+          <li data-cat="study"><i style="background:#8B5CF6"></i>Study</li>
+        </ul>
+        <p style="font-size:12px;color:var(--grey);margin-top:12px">Tap a category to hide it.</p>
+      </div>
+    </aside>
+
+    <main>
+      <div class="top">
+        <button class="burger" id="burger" aria-label="Menu">&#9776;</button>
+        <h1 id="title">&nbsp;</h1>
+        <div class="nav">
+          <button id="prev" aria-label="Previous month">&lsaquo;</button>
+          <button id="next" aria-label="Next month">&rsaquo;</button>
+        </div>
+        <button class="today-btn" id="today-btn">Today</button>
+        <div class="search"><input id="q" type="search" placeholder="Search events..."></div>
+      </div>
+
+      <div class="cal">
+        <div class="dows"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div>
+        <div class="grid" id="grid"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="panel" id="panel">
+    <div class="ph">
+      <h2 id="panel-title">&nbsp;</h2>
+      <button id="panel-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="pb" id="panel-body"></div>
+    <div class="pf"><button id="panel-add">+ Add event on this day</button></div>
+  </div>
+
+  <div class="mask" id="mask"></div>
+  <div class="modal" id="modal">
+    <h2>New event</h2>
+    <div class="f">
+      <div class="fw"><label for="f-title">Title</label><input id="f-title" placeholder="What is it?"></div>
+      <div class="row">
+        <div><label for="f-date">Date</label><input id="f-date" type="date"></div>
+        <div><label for="f-time">Time</label><input id="f-time" type="time"></div>
+      </div>
+      <div>
+        <label>Category</label>
+        <div class="swatches">
+          <span class="sw on" data-cat="work" style="background:#4B5BD7" title="Work"></span>
+          <span class="sw" data-cat="personal" style="background:#12A594" title="Personal"></span>
+          <span class="sw" data-cat="health" style="background:#E0733D" title="Health"></span>
+          <span class="sw" data-cat="social" style="background:#C2418E" title="Social"></span>
+          <span class="sw" data-cat="study" style="background:#8B5CF6" title="Study"></span>
+        </div>
+      </div>
+      <div class="macts">
+        <button class="cancel" id="cancel">Cancel</button>
+        <button class="save" id="save">Save event</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== WEATHER VIEW ============================== -->
+<div class="view view-weather" data-view-panel="weather">
+  <main class="wx-container">
+    <header><h1>&#127780;&#65039; Weather</h1><p>Live conditions anywhere in the world</p></header>
+    <section class="selector">
+      <div class="fields">
+        <label class="field">COUNTRY<select id="wx-country"><option>Loading countries&hellip;</option></select></label>
+        <label class="field">STATE / REGION<select id="wx-state" disabled><option>Select a country first</option></select></label>
+        <label class="field">CITY<select id="wx-city" disabled><option>Select a state first</option></select></label>
+      </div>
+      <div class="actions">
+        <button id="wx-show" disabled>Show live weather</button>
+        <button id="wx-nearby" class="location">Use my location</button>
+      </div>
+      <p class="note" id="wx-note">Choose a country, then a state/region and city. Weather updates live from Open-Meteo.</p>
+    </section>
+    <div id="wx-content" class="loading">Loading world locations&hellip;</div>
+  </main>
+</div>
+
+<!-- ============================== RADIO VIEW ============================== -->
+<div class="view view-radio" data-view-panel="radio">
+  <header class="topbar">
+    <a class="brand" href="#top"><span>&#9673;</span>WorldWave</a>
+    <span class="live-status"><i></i> LIVE RADIO, WORLDWIDE <b id="live-clock"></b></span>
+  </header>
+  <main id="top">
+    <section class="hero shell">
+      <div>
+        <p class="eyebrow">REAL LIVE STREAMS &bull; FREE TO LISTEN</p>
+        <h1>Hear the world,<br><em>one station at a time.</em></h1>
+        <p class="lead">Choose a country, discover its live public radio stations, and play them straight through your speakers.</p>
+        <div class="hero-note">&#10022; Station names, countries and streams update from the public live-radio directory.</div>
+      </div>
+      <div class="world-card" aria-hidden="true">
+        <span>AMERICA</span><span>EUROPE</span><span>AFRICA</span><span>ASIA</span><span>OCEANIA</span>
+        <b>ON AIR</b><i></i><i></i><i></i>
+      </div>
+    </section>
+
+    <section class="finder" id="stations">
+      <div class="shell">
+        <div class="finder-heading">
+          <div><p class="eyebrow">EXPLORE LIVE RADIO</p><h2>Pick a place. Press play.</h2></div>
+          <p id="directory-note">Loading the world radio directory&hellip;</p>
+        </div>
+        <div class="controls">
+          <label><span>COUNTRY / REGION</span><select id="country" disabled><option>Loading countries&hellip;</option></select></label>
+          <label><span>FIND A STATION</span><input id="search" type="search" placeholder="Search station name, genre or language" autocomplete="off"></label>
+        </div>
+        <div class="filter-row" role="group" aria-label="Station type">
+          <button class="filter active" data-filter="all">All live radio</button>
+          <button class="filter" data-filter="news">News</button>
+          <button class="filter" data-filter="talk">Talk</button>
+          <button class="filter" data-filter="music">Music</button>
+          <span id="results-count"></span>
+        </div>
+        <div id="message" class="message" role="status">Choose a country to begin.</div>
+        <div id="station-list" class="station-list" aria-live="polite"></div>
+        <button id="load-more" class="load-more" hidden>Show more stations</button>
+      </div>
+    </section>
+
+    <section class="how shell">
+      <div><strong>01</strong><h3>Choose a country</h3><p>The country menu is updated from the live directory and includes station counts.</p></div>
+      <div><strong>02</strong><h3>Find your sound</h3><p>Search or filter for news, talk, music, local language and more.</p></div>
+      <div><strong>03</strong><h3>Listen live</h3><p>Press play on any station. Audio plays through your selected device speakers.</p></div>
+    </section>
+  </main>
+  <footer>WorldWave uses publicly listed radio streams. Availability and programme content are controlled by each broadcaster.</footer>
+</div>
+
+<!-- ============================== I-WATCH VIEW ============================== -->
+<div class="view view-iwatch" data-view-panel="iwatch">
+  <div class="wrap">
+    <div class="app-title"><span class="emoji">&#127916;</span> <b>I-WATCH</b></div>
+
+    <section class="media-card youtube-card" aria-label="I-WATCH">
+      <p class="widget-subtext">Search for a song, artist, movie, or TV show — or paste a YouTube link. Everything you play is saved to your Library (up to 1000 songs).</p>
+
+      <div class="youtube-searchbar-wrap" id="youtube-searchbar-wrap">
+        <div class="youtube-toolbar">
+          <input id="youtube-search-input" type="text" placeholder="Search anything — a song, artist, movie, TV show, or paste a YouTube link/ID…" autocomplete="off">
+          <button id="youtube-search-btn" class="youtube-search-button" type="button">Search</button>
+          <button id="youtube-library-btn" class="youtube-api-key-button" type="button">&#128193; Library (0)</button>
+          <button id="youtube-api-key-btn" class="youtube-api-key-button" type="button" title="Set YouTube API key">&#128273; API Key</button>
+        </div>
+        <ul class="search-results youtube-search-results" id="youtube-search-results"></ul>
+
+        <div id="youtube-related-panel" class="yt-flyout" hidden>
+          <div class="yt-flyout-header">
+            <img id="yt-flyout-thumb" alt="">
+            <div class="yt-flyout-titles">
+              <div id="yt-flyout-title" class="yt-flyout-title">&mdash;</div>
+              <div id="yt-flyout-subtitle" class="yt-flyout-subtitle">&mdash;</div>
+            </div>
+            <button id="yt-flyout-close" class="youtube-api-key-button" type="button" title="Close">&#10005;</button>
+          </div>
+          <div id="yt-flyout-body" class="yt-flyout-body"></div>
+          <div class="yt-flyout-footer">
+            <button id="yt-flyout-more" class="youtube-api-key-button" type="button" hidden>Load more</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="youtube-api-key-panel" class="youtube-api-key-panel" hidden>
+        <label for="youtube-api-key-input">YouTube Data API v3 key</label>
+        <input id="youtube-api-key-input" type="password" placeholder="Paste your API key">
+        <button id="youtube-api-key-save" class="youtube-api-key-button" type="button">Save key</button>
+        <button id="youtube-api-key-clear" class="youtube-api-key-button" type="button">Clear key</button>
+        <p class="youtube-api-hint">A key is already embedded, so this tab works out of the box. Use this panel only if you ever want to swap in a different key. Each keystroke's suggestion lookup uses API quota, so typing quickly can use up a free daily quota faster than you'd expect.</p>
+        <p id="youtube-api-key-status"></p>
+      </div>
+      <div id="youtube-results" class="youtube-results"></div>
+      <div id="tmdb-results-label" class="widget-subtext" style="display:none;margin:-4px 0 8px;">&#127916; Movies &amp; TV &mdash; click one to play its trailer</div>
+      <div id="tmdb-results" class="youtube-results"></div>
+      <div class="youtube-screen" id="youtube-screen">
+        <div class="yt-player-nav">
+          <button id="yt-prev-btn" class="yt-nav-btn" type="button" aria-label="Previous video" title="Previous video" disabled>&#8249;</button>
+          <button id="yt-next-btn" class="yt-nav-btn" type="button" aria-label="Next video" title="Next video" disabled>&#8250;</button>
+        </div>
+        <p id="youtube-screen-hint" class="radio-status">No video loaded yet — search above or paste a link.</p>
+      </div>
+      <p id="yt-queue-hint" class="widget-subtext" style="margin:8px 0 0;display:none;"></p>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" id="libraryBackdrop">
+    <div class="modal">
+      <div class="library-modal-header">
+        <h3>&#128193; Your Library</h3>
+        <span id="library-count-label" class="widget-subtext" style="margin:0;">0 / 1000 saved</span>
+      </div>
+      <div id="library-list" class="library-list"></div>
+      <p class="youtube-api-hint" style="margin:0 0 10px;">Saved for this browsing session only — use Export to save your library as a file, and Import to load it back in later.</p>
+      <div class="library-actions">
+        <button id="library-export-btn" class="youtube-api-key-button" type="button">&#8681; Export</button>
+        <button id="library-import-btn" class="youtube-api-key-button" type="button">&#8679; Import</button>
+        <input type="file" id="library-import-input" accept="application/json" hidden>
+        <button id="library-clear-btn" class="youtube-api-key-button" type="button">&#128465; Clear all</button>
+        <button id="library-close-btn" class="btn btn-primary" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PERSISTENT PLAYER (survives tab switches) ===================== -->
+<section class="player" aria-label="Radio player">
+  <div class="player-art">&#9673;</div>
+  <div class="now-playing">
+    <small>NOW PLAYING &mdash; LIVE</small>
+    <strong id="now-title">Choose a station</strong>
+    <span id="now-info">Live radio will play here</span>
+  </div>
+  <div class="player-controls">
+    <button id="previous" aria-label="Previous station">&lsaquo;</button>
+    <button id="play" class="play-button" aria-label="Play selected station">&#9658;</button>
+    <button id="radio-next" aria-label="Next station">&rsaquo;</button>
+  </div>
+  <label class="volume"><span>&#128266;</span><input id="volume" type="range" min="0" max="100" value="80" aria-label="Volume"></label>
+</section>
+<audio id="audio" preload="none"></audio>
+
+<script src="script.js" defer></script>
+</body>
+</html>
