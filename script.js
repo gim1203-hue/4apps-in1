@@ -11,6 +11,49 @@
   });
 })();
 
+/* ---------- WEBSITE tab — PIN-gated (0123), only this one tab ---------- */
+(function(){
+  var PIN_CODE = '0123';
+  var gate = document.getElementById('website-pin-gate');
+  var content = document.getElementById('website-content');
+  var input = document.getElementById('website-pin-input');
+  var submitBtn = document.getElementById('website-pin-submit');
+  var errorMsg = document.getElementById('website-pin-error');
+  var frame = document.querySelector('.website-frame');
+  if(!gate || !content || !input || !submitBtn || !errorMsg || !frame) return;
+
+  function lock(){
+    gate.hidden = false;
+    content.hidden = true;
+    input.value = '';
+    errorMsg.hidden = true;
+  }
+  function unlock(){
+    gate.hidden = true;
+    content.hidden = false;
+    if(!frame.getAttribute('src') && frame.dataset.src) frame.src = frame.dataset.src;
+  }
+  function attemptUnlock(){
+    if(input.value.trim() === PIN_CODE){
+      unlock();
+    } else {
+      errorMsg.hidden = false;
+      input.value = '';
+      input.focus();
+    }
+  }
+  submitBtn.addEventListener('click', attemptUnlock);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); attemptUnlock(); } });
+
+  // Re-lock whenever a different tab is opened, so coming back to
+  // Website always asks for the PIN again.
+  document.querySelectorAll('.hub-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      if(tab.dataset.view !== 'website') lock();
+    });
+  });
+})();
+
 /* ================================== CALENDAR ================================== */
 document.addEventListener("DOMContentLoaded", function () {
 

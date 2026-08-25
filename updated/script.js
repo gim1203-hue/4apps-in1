@@ -11,6 +11,49 @@
   });
 })();
 
+/* ---------- WEBSITE tab — PIN-gated (0123), only this one tab ---------- */
+(function(){
+  var PIN_CODE = '0123';
+  var gate = document.getElementById('website-pin-gate');
+  var content = document.getElementById('website-content');
+  var input = document.getElementById('website-pin-input');
+  var submitBtn = document.getElementById('website-pin-submit');
+  var errorMsg = document.getElementById('website-pin-error');
+  var frame = document.querySelector('.website-frame');
+  if(!gate || !content || !input || !submitBtn || !errorMsg || !frame) return;
+
+  function lock(){
+    gate.hidden = false;
+    content.hidden = true;
+    input.value = '';
+    errorMsg.hidden = true;
+  }
+  function unlock(){
+    gate.hidden = true;
+    content.hidden = false;
+    if(!frame.getAttribute('src') && frame.dataset.src) frame.src = frame.dataset.src;
+  }
+  function attemptUnlock(){
+    if(input.value.trim() === PIN_CODE){
+      unlock();
+    } else {
+      errorMsg.hidden = false;
+      input.value = '';
+      input.focus();
+    }
+  }
+  submitBtn.addEventListener('click', attemptUnlock);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); attemptUnlock(); } });
+
+  // Re-lock whenever a different tab is opened, so coming back to
+  // Website always asks for the PIN again.
+  document.querySelectorAll('.hub-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      if(tab.dataset.view !== 'website') lock();
+    });
+  });
+})();
+
 /* ================================== CALENDAR ================================== */
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -513,19 +556,22 @@ document.addEventListener("DOMContentLoaded", function () {
   const TMDB_KEY = "7e632299820a47439270beeea56a83bf"; // The Movie Database — search only (posters/info), no video hosting
   const TMDB_IMG = "https://image.tmdb.org/t/p/w342";
 
+  const SEARCH_HISTORY_CAP = 200;
+
   const state = {
     apiKey: "AIzaSyB0J5bv6BP3KPpRXGyfiFUbJhPFu02qvLU", // embedded so it doesn't need to be re-entered
     library: [], // newest first: {id, title, channelTitle, channelId, thumb, addedAt}
     currentVideo: null, // {id, title, channelTitle, channelId} — whatever is loaded in the player right now
     playlist: [], // whatever list Next/Previous currently steps through: {id, title, channelTitle, channelId}[]
     playlistIndex: -1,
+    searchHistory: [], // newest first: {query, searchedAt} — capped at SEARCH_HISTORY_CAP
   };
 
   const suggestCache = new Map();      // query -> items[]
   const uploadsPlaylistCache = new Map(); // channelId -> uploads playlist id (or null)
   let suggestReqId = 0;
 
-  const flyoutState = { playlistId: null, channelId: null, nextPageToken: null, loadedIds: new Set(), items: [] };
+  const flyoutState = { playlistId: null, channelId: null, nextPageToken: null, loadedIds: new Set(), items: [], collapsed: false };
 
   const yEls = {
     wrap: document.getElementById('youtube-searchbar-wrap'),
@@ -562,6 +608,9 @@ document.addEventListener("DOMContentLoaded", function () {
     prevBtn: document.getElementById('yt-prev-btn'),
     nextBtn: document.getElementById('yt-next-btn'),
     queueHint: document.getElementById('yt-queue-hint'),
+    searchHistoryList: document.getElementById('search-history-list'),
+    searchHistoryCountLabel: document.getElementById('search-history-count-label'),
+    searchHistoryClearBtn: document.getElementById('search-history-clear-btn'),
   };
 
   const thumbFor = (id) => `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
@@ -662,7 +711,48 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  function openLibrary(){ yEls.libraryBackdrop.classList.add('open'); renderLibraryList(); }
+  /* ---------- Search history (what you've searched for, saved for this session) ---------- */
+  function addSearchHistory(query){
+    const q = (query || '').trim();
+    if(!q) return;
+    state.searchHistory = state.searchHistory.filter(e => e.query.toLowerCase() !== q.toLowerCase());
+    state.searchHistory.unshift({ query: q, searchedAt: Date.now() });
+    if(state.searchHistory.length > SEARCH_HISTORY_CAP){
+      state.searchHistory.length = SEARCH_HISTORY_CAP;
+    }
+    if(yEls.libraryBackdrop.classList.contains('open')) renderSearchHistoryList();
+  }
+
+  function renderSearchHistoryList(){
+    yEls.searchHistoryCountLabel.textContent = `${state.searchHistory.length} / ${SEARCH_HISTORY_CAP} saved`;
+    yEls.searchHistoryList.innerHTML = '';
+    state.searchHistory.forEach(entry=>{
+      const row = document.createElement('div');
+      row.className = 'search-history-item';
+      row.innerHTML = `
+        <span class="sh-text">${escapeHtml(entry.query)}</span>
+        <button class="sh-remove" type="button" title="Remove">&#10005;</button>`;
+      row.querySelector('.sh-remove').addEventListener('click', (e)=>{
+        e.stopPropagation();
+        state.searchHistory = state.searchHistory.filter(e2 => e2 !== entry);
+        renderSearchHistoryList();
+      });
+      row.addEventListener('click', ()=>{
+        yEls.searchInput.value = entry.query;
+        closeLibrary();
+        handleSearch();
+      });
+      yEls.searchHistoryList.appendChild(row);
+    });
+  }
+
+  yEls.searchHistoryClearBtn.addEventListener('click', ()=>{
+    if(state.searchHistory.length && !confirm('Clear your recent searches? This cannot be undone.')) return;
+    state.searchHistory = [];
+    renderSearchHistoryList();
+  });
+
+  function openLibrary(){ yEls.libraryBackdrop.classList.add('open'); renderLibraryList(); renderSearchHistoryList(); }
   function closeLibrary(){ yEls.libraryBackdrop.classList.remove('open'); }
   yEls.libraryBtn.addEventListener('click', openLibrary);
   yEls.libraryCloseBtn.addEventListener('click', closeLibrary);
@@ -955,6 +1045,7 @@ document.addEventListener("DOMContentLoaded", function () {
       yEls.flyoutBody.innerHTML = `<div class="status-msg">Add an API key to browse by artist/channel.</div>`;
       yEls.flyout.hidden = false;
       yEls.flyoutMore.hidden = true;
+      setFlyoutCollapsed(false);
       return;
     }
     flyoutState.channelId = channelId;
@@ -966,6 +1057,7 @@ document.addEventListener("DOMContentLoaded", function () {
     yEls.flyoutBody.innerHTML = '';
     yEls.flyoutMore.hidden = true;
     yEls.flyout.hidden = false;
+    setFlyoutCollapsed(false);
     const nowCard = buildNowPlayingCard();
     if(nowCard){
       const pinnedGrid = document.createElement('div');
@@ -1099,7 +1191,17 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   function closeFlyout(){ yEls.flyout.hidden = true; yEls.flyoutBody.innerHTML = ''; }
-  yEls.flyoutClose.addEventListener('click', closeFlyout);
+
+  /* The header button no longer closes/clears the flyout — it just shows/hides
+     its content in place, so switching away and back doesn't lose or re-fetch it. */
+  function setFlyoutCollapsed(collapsed){
+    flyoutState.collapsed = collapsed;
+    yEls.flyout.classList.toggle('collapsed', collapsed);
+    yEls.flyoutClose.innerHTML = collapsed ? '&#9660;' : '&#9650;';
+    yEls.flyoutClose.title = collapsed ? 'Show' : 'Hide';
+    yEls.flyoutClose.setAttribute('aria-label', collapsed ? 'Show related videos' : 'Hide related videos');
+  }
+  yEls.flyoutClose.addEventListener('click', ()=> setFlyoutCollapsed(!flyoutState.collapsed));
 
   /* ---------- Freeform search ---------- */
   function renderResults(items){
@@ -1230,6 +1332,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const videoId = extractVideoId(raw);
     if(videoId){ yEls.resultsGrid.innerHTML = ''; yEls.tmdbGrid.innerHTML = ''; yEls.tmdbLabel.style.display = 'none'; loadVideo(videoId); return; }
     closeFlyout();
+    addSearchHistory(raw);
     searchYouTube(raw, { autoplay: true });
     searchTMDbAndRender(raw);
   }

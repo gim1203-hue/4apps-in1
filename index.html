@@ -14,12 +14,35 @@
 <header class="hub-nav">
   <div class="hub-brand"><span>&#9689;</span>My Apps</div>
   <nav class="hub-tabs">
+    <button class="hub-tab" data-view="website">&#127760; Website</button>
     <button class="hub-tab active" data-view="calendar">&#128197; Calendar</button>
     <button class="hub-tab" data-view="weather">&#127780;&#65039; Weather</button>
     <button class="hub-tab" data-view="radio">&#128250; Radio<span class="dot"></span></button>
     <button class="hub-tab" data-view="iwatch">&#127916; I-WATCH</button>
   </nav>
 </header>
+
+<!-- ============================== WEBSITE VIEW ============================== -->
+<div class="view view-website" data-view-panel="website">
+  <div class="website-pin-gate" id="website-pin-gate">
+    <div class="website-pin-box">
+      <p class="website-pin-icon">&#128274;</p>
+      <p class="website-pin-label">Enter the 4-digit PIN to open this tab</p>
+      <div class="website-pin-row">
+        <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="website-pin-input" aria-label="4-digit PIN">
+        <button type="button" id="website-pin-submit">Unlock</button>
+      </div>
+      <p class="website-pin-error" id="website-pin-error" hidden>Incorrect PIN — try again.</p>
+    </div>
+  </div>
+  <div class="website-content" id="website-content" hidden>
+    <div class="website-toolbar">
+      <span class="website-toolbar-title">&#127760; Imran Khan's First Website</span>
+      <a class="website-open-btn" href="https://gim1203-hue.github.io/mysitecopy/" target="_blank" rel="noopener">Open in new tab &#8599;</a>
+    </div>
+    <iframe class="website-frame" data-src="https://gim1203-hue.github.io/mysitecopy/" title="Imran Khan's First Website" loading="lazy"></iframe>
+  </div>
+</div>
 
 <!-- ============================== CALENDAR VIEW ============================== -->
 <div class="view view-calendar active" data-view-panel="calendar">
