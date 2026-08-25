@@ -14,7 +14,7 @@
 <header class="hub-nav">
   <div class="hub-brand"><span>&#9689;</span>My Apps</div>
   <nav class="hub-tabs">
-    <a class="hub-tab" href="https://gim1203-hue.github.io/mysitecopy/" target="_blank" rel="noopener">&#127760; Website</a>
+    <button class="hub-tab" id="website-tab" type="button" data-website-url="https://gim1203-hue.github.io/mysitecopy/">&#127760; Website</button>
     <button class="hub-tab active" data-view="calendar">&#128197; Calendar</button>
     <button class="hub-tab" data-view="weather">&#127780;&#65039; Weather</button>
     <button class="hub-tab" data-view="radio">&#128250; Radio<span class="dot"></span></button>
@@ -280,6 +280,19 @@
   <label class="volume"><span>&#128266;</span><input id="volume" type="range" min="0" max="100" value="80" aria-label="Volume"></label>
 </section>
 <audio id="audio" preload="none"></audio>
+
+<!-- ============================== WEBSITE TAB — PIN GATE ============================== -->
+<div class="website-pin-overlay" id="website-pin-overlay" hidden>
+  <div class="website-pin-modal">
+    <button class="website-pin-close" id="website-pin-close" type="button" aria-label="Close">&times;</button>
+    <p class="website-pin-label">&#128274; Enter the 4-digit PIN to open this website</p>
+    <div class="website-pin-row">
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="website-pin-input" class="website-pin-input" aria-label="4-digit PIN">
+      <button type="button" id="website-pin-submit" class="website-pin-submit">Unlock</button>
+    </div>
+    <p class="website-pin-error" id="website-pin-error" hidden>Incorrect PIN — try again.</p>
+  </div>
+</div>
 
 <script src="script.js" defer></script>
 </body>

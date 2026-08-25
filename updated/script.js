@@ -4,11 +4,66 @@
   var views = document.querySelectorAll(".view");
   tabs.forEach(function(tab){
     tab.addEventListener("click", function(){
-      if(!tab.dataset.view) return; // plain links (e.g. Website) just navigate — not a view switch
+      if(!tab.dataset.view) return; // Website tab has its own PIN-gate handler below — not a view switch
       var target = tab.dataset.view;
       tabs.forEach(function(t){ t.classList.toggle("active", t === tab); });
       views.forEach(function(v){ v.classList.toggle("active", v.dataset.viewPanel === target); });
     });
+  });
+})();
+
+/* ============================== WEBSITE TAB — PIN GATE ============================== */
+/* Asks for the PIN every single time the tab is pressed — there is no
+   remembered unlock. A correct PIN opens the linked site in a new tab;
+   the gate is reset immediately afterward so the next press asks again. */
+(function(){
+  var websiteTab = document.getElementById('website-tab');
+  var overlay = document.getElementById('website-pin-overlay');
+  if(!websiteTab || !overlay) return;
+
+  var input = document.getElementById('website-pin-input');
+  var submitBtn = document.getElementById('website-pin-submit');
+  var closeBtn = document.getElementById('website-pin-close');
+  var errorMsg = document.getElementById('website-pin-error');
+  var PIN_CODE = '0123';
+  var targetUrl = websiteTab.dataset.websiteUrl;
+
+  function openGate(){
+    overlay.hidden = false;
+    errorMsg.hidden = true;
+    input.value = '';
+    input.focus();
+  }
+  function closeGate(){
+    overlay.hidden = true;
+    input.value = '';
+    errorMsg.hidden = true;
+  }
+  function attemptUnlock(){
+    if(input.value.trim() === PIN_CODE){
+      closeGate();
+      window.open(targetUrl, '_blank', 'noopener');
+    } else {
+      errorMsg.hidden = false;
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  websiteTab.addEventListener('click', function(e){
+    e.preventDefault();
+    openGate();
+  });
+  submitBtn.addEventListener('click', attemptUnlock);
+  input.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); attemptUnlock(); }
+  });
+  closeBtn.addEventListener('click', closeGate);
+  overlay.addEventListener('click', function(e){
+    if(e.target === overlay) closeGate();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && !overlay.hidden) closeGate();
   });
 })();
 

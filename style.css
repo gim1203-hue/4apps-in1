@@ -575,3 +575,23 @@ input,select,textarea{font:inherit}
   .view-iwatch .yt-nav-btn{width:36px;height:36px;font-size:19px;}
   .view-iwatch .app-title{font-size:13px;padding:8px 12px;}
 }
+/* ============================== WEBSITE TAB — PIN GATE ============================== */
+.website-pin-overlay{position:fixed;inset:0;z-index:999;background:rgba(10,11,15,.72);
+  display:flex;align-items:center;justify-content:center;padding:16px}
+.website-pin-overlay[hidden]{display:none}
+.website-pin-modal{position:relative;width:100%;max-width:340px;background:#12141a;
+  color:#fff;border:1px solid #333844;border-radius:16px;padding:26px 22px 22px;
+  box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.website-pin-close{position:absolute;top:10px;right:12px;font-size:20px;line-height:1;
+  color:#b7bdc9;background:none;border:0}
+.website-pin-close:hover{color:#fff}
+.website-pin-label{margin:0 0 14px;font-weight:700;font-size:14.5px;text-align:center}
+.website-pin-row{display:flex;gap:8px;justify-content:center}
+.website-pin-input{width:120px;padding:10px 12px;border-radius:10px;border:1px solid #333844;
+  background:#1c1f27;color:#fff;font-size:16px;letter-spacing:4px;text-align:center}
+.website-pin-input:focus{outline:2px solid #ff6c3b;outline-offset:1px}
+.website-pin-submit{padding:10px 18px;border-radius:10px;font-weight:700;font-size:13.5px;
+  background:#ff6c3b;color:#fff}
+.website-pin-submit:hover{background:#ff8256}
+.website-pin-error{margin:12px 0 0;font-size:12.5px;color:#ff6c6c;text-align:center}
+.website-pin-error[hidden]{display:none}
