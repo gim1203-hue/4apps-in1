@@ -67,6 +67,18 @@
   });
 })();
 
+/* ============================== EXTERNAL LINK TABS (e.g. GIF) ============================== */
+/* Any hub-tab with data-external-url just opens that link in a new tab —
+   no PIN gate, no view switch. Add more tabs like this the same way. */
+(function(){
+  document.querySelectorAll('.hub-tab[data-external-url]').forEach(function(tab){
+    tab.addEventListener('click', function(e){
+      e.preventDefault();
+      window.open(tab.dataset.externalUrl, '_blank', 'noopener');
+    });
+  });
+})();
+
 /* ================================== CALENDAR ================================== */
 document.addEventListener("DOMContentLoaded", function () {
 
