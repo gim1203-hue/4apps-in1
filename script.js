@@ -4,7 +4,7 @@
   var views = document.querySelectorAll(".view");
   tabs.forEach(function(tab){
     tab.addEventListener("click", function(){
-      if(!tab.dataset.view) return; // Website tab has its own PIN-gate handler below — not a view switch
+      if(!tab.dataset.view || tab.dataset.locked) return; // Locked tabs are handled by the PIN-gate below — not a plain view switch
       var target = tab.dataset.view;
       tabs.forEach(function(t){ t.classList.toggle("active", t === tab); });
       views.forEach(function(v){ v.classList.toggle("active", v.dataset.viewPanel === target); });
@@ -12,23 +12,29 @@
   });
 })();
 
-/* ============================== WEBSITE TAB — PIN GATE ============================== */
-/* Asks for the PIN every single time the tab is pressed — there is no
-   remembered unlock. A correct PIN opens the linked site in a new tab;
-   the gate is reset immediately afterward so the next press asks again. */
+/* ============================== LOCKED TABS — PIN GATE ============================== */
+/* Any hub-tab marked data-locked="true" asks for the 4-digit PIN every single
+   time it's pressed — there is no remembered unlock. A correct PIN opens the
+   linked site in a new tab (or switches to the internal view, for tabs like
+   I-WATCH that use data-view instead of a URL); the gate resets immediately
+   afterward so the next press asks again. Add more locked tabs by putting
+   data-locked="true" on the button — no other wiring needed. */
 (function(){
-  var websiteTab = document.getElementById('website-tab');
   var overlay = document.getElementById('website-pin-overlay');
-  if(!websiteTab || !overlay) return;
+  if(!overlay) return;
 
   var input = document.getElementById('website-pin-input');
   var submitBtn = document.getElementById('website-pin-submit');
   var closeBtn = document.getElementById('website-pin-close');
   var errorMsg = document.getElementById('website-pin-error');
   var PIN_CODE = '0123';
-  var targetUrl = websiteTab.dataset.websiteUrl;
+  var pendingTab = null;
 
-  function openGate(){
+  var allTabs = document.querySelectorAll('.hub-tab');
+  var allViews = document.querySelectorAll('.view');
+
+  function openGate(tab){
+    pendingTab = tab;
     overlay.hidden = false;
     errorMsg.hidden = true;
     input.value = '';
@@ -38,11 +44,20 @@
     overlay.hidden = true;
     input.value = '';
     errorMsg.hidden = true;
+    pendingTab = null;
   }
   function attemptUnlock(){
+    if(!pendingTab) return;
     if(input.value.trim() === PIN_CODE){
+      var tab = pendingTab;
       closeGate();
-      window.open(targetUrl, '_blank', 'noopener');
+      if(tab.dataset.websiteUrl || tab.dataset.externalUrl){
+        window.open(tab.dataset.websiteUrl || tab.dataset.externalUrl, '_blank', 'noopener');
+      } else if(tab.dataset.view){
+        var target = tab.dataset.view;
+        allTabs.forEach(function(t){ t.classList.toggle('active', t === tab); });
+        allViews.forEach(function(v){ v.classList.toggle('active', v.dataset.viewPanel === target); });
+      }
     } else {
       errorMsg.hidden = false;
       input.value = '';
@@ -50,10 +65,13 @@
     }
   }
 
-  websiteTab.addEventListener('click', function(e){
-    e.preventDefault();
-    openGate();
+  document.querySelectorAll('.hub-tab[data-locked]').forEach(function(tab){
+    tab.addEventListener('click', function(e){
+      e.preventDefault();
+      openGate(tab);
+    });
   });
+
   submitBtn.addEventListener('click', attemptUnlock);
   input.addEventListener('keydown', function(e){
     if(e.key === 'Enter'){ e.preventDefault(); attemptUnlock(); }
@@ -68,10 +86,10 @@
 })();
 
 /* ============================== EXTERNAL LINK TABS (e.g. GIF) ============================== */
-/* Any hub-tab with data-external-url just opens that link in a new tab —
-   no PIN gate, no view switch. Add more tabs like this the same way. */
+/* Any unlocked hub-tab with data-external-url just opens that link in a new
+   tab — no PIN gate, no view switch. Locked tabs are handled above instead. */
 (function(){
-  document.querySelectorAll('.hub-tab[data-external-url]').forEach(function(tab){
+  document.querySelectorAll('.hub-tab[data-external-url]:not([data-locked])').forEach(function(tab){
     tab.addEventListener('click', function(e){
       e.preventDefault();
       window.open(tab.dataset.externalUrl, '_blank', 'noopener');
