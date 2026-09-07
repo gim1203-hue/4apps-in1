@@ -12,6 +12,26 @@
   });
 })();
 
+/* ============================== HUB NAV HEIGHT TRACKING ==============================
+   The hub nav wraps onto multiple lines on narrow/phone screens (it holds a lot of
+   tabs), so its height isn't a fixed number. We measure it live and publish it as
+   --hub-nav-h so anything that needs to sit "just below the header" (the day panel,
+   for instance) stays correct at any screen size instead of guessing a pixel value. */
+(function(){
+  var nav = document.querySelector(".hub-nav");
+  if(!nav) return;
+  function sync(){
+    document.documentElement.style.setProperty("--hub-nav-h", nav.offsetHeight + "px");
+  }
+  sync();
+  if(window.ResizeObserver){
+    new ResizeObserver(sync).observe(nav);
+  } else {
+    window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
+  }
+})();
+
 /* ============================== LOCKED TABS — PIN GATE ============================== */
 /* Any hub-tab marked data-locked="true" asks for the 4-digit PIN every single
    time it's pressed — there is no remembered unlock. A correct PIN opens the
@@ -320,9 +340,11 @@ document.addEventListener("DOMContentLoaded", function () {
     panel.classList.add("open");
     renderMini();
   }
-  document.getElementById("panel-close").addEventListener("click", function(){
+  function closePanel(){
     panel.classList.remove("open");
-  });
+  }
+  document.getElementById("panel-close").addEventListener("click", closePanel);
+  document.getElementById("panel-retract").addEventListener("click", closePanel);
 
   var mask = document.getElementById("mask"), modal = document.getElementById("modal"), cat = "work";
   function openModal(d){

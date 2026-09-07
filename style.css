@@ -96,12 +96,29 @@ input,select,textarea{font:inherit}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:3px solid}
 .more{font-size:11px;color:var(--grey);font-weight:600;padding-left:4px}
 
-/* detail panel */
-.view-calendar .panel{position:fixed;inset:0 0 0 auto;width:min(390px,92vw);background:var(--panel, #fff);
+/* detail panel — starts just below the sticky hub nav (its live height is
+   tracked in --hub-nav-h by script.js) instead of running up behind it */
+.view-calendar .panel{position:fixed;top:var(--hub-nav-h,60px);right:0;bottom:0;left:auto;
+  width:min(390px,92vw);background:var(--panel, #fff);
   border-left:1px solid var(--line,#E4E7EC);box-shadow:-10px 0 40px rgba(0,0,0,.12);
   transform:translateX(100%);transition:transform .26s;z-index:60;
   display:flex;flex-direction:column;font:15px/1.6 var(--sans)}
 .view-calendar .panel.open{transform:none}
+
+/* retract tab — a right-pointing arrow handle clipped to the panel's left
+   edge, so closing it is obvious even without noticing the small × above.
+   It rides on the panel itself, so it slides fully offscreen with it when
+   the panel is closed. */
+.panel-retract{position:absolute;top:50%;left:-34px;transform:translateY(-50%);
+  width:34px;height:58px;display:flex;align-items:center;justify-content:center;
+  background:var(--panel,#fff);color:var(--grey,#707885);
+  border:1px solid var(--line,#E4E7EC);border-right:none;border-radius:12px 0 0 12px;
+  box-shadow:-6px 0 16px rgba(0,0,0,.1);font-size:19px;line-height:1}
+.panel-retract:hover{background:var(--bg,#F6F7F9);color:var(--ink,#1A1D23)}
+.panel-retract:active{background:var(--brand-l,#EEF0FD)}
+@media(max-width:560px){
+  .panel-retract{width:28px;height:52px;left:-28px;font-size:16px}
+}
 .ph{display:flex;align-items:center;gap:12px;padding:20px 22px;border-bottom:1px solid var(--line,#E4E7EC)}
 .ph h2{font-size:17px;flex:1}
 .ph button{width:30px;height:30px;border-radius:8px;color:var(--grey,#707885);font-size:17px}
