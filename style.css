@@ -107,9 +107,11 @@ input,select,textarea{font:inherit}
 .ph button{width:30px;height:30px;border-radius:8px;color:var(--grey,#707885);font-size:17px}
 .ph button:hover{background:var(--bg,#F6F7F9)}
 .pb{padding:20px 22px;overflow-y:auto;flex:1;display:grid;gap:12px;align-content:start}
-.pev{border:1px solid var(--line,#E4E7EC);border-radius:var(--r,10px);padding:13px 15px;border-left:4px solid}
+.pev{position:relative;border:1px solid var(--line,#E4E7EC);border-radius:var(--r,10px);padding:13px 34px 13px 15px;border-left:4px solid}
 .pev b{display:block;font-size:14.5px}
 .pev span{font-size:12.5px;color:var(--grey,#707885)}
+.pev-delete{position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;border-radius:50%;background:transparent;color:var(--grey,#707885);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pev-delete:hover{background:var(--bg,#F6F7F9);color:#E0733D}
 .empty{color:var(--grey,#707885);font-size:14px;text-align:center;padding:34px 0}
 .pf{padding:16px 22px;border-top:1px solid var(--line,#E4E7EC)}
 .pf button{width:100%;background:var(--brand,#4B5BD7);color:#fff;padding:11px;border-radius:var(--r,10px);font-weight:700}

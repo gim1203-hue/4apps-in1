@@ -117,23 +117,80 @@ document.addEventListener("DOMContentLoaded", function () {
     var d = new Date(today.getFullYear(), today.getMonth(), today.getDate()+days, h, m||0);
     return d;
   }
-  var events = [
-    { id:1, title:"Team standup",        when:rel(0,9,30),  cat:"work" },
-    { id:2, title:"Design review",       when:rel(0,14,0),  cat:"work" },
-    { id:3, title:"Gym session",         when:rel(0,18,30), cat:"health" },
-    { id:4, title:"1:1 with manager",    when:rel(1,11,0),  cat:"work" },
-    { id:5, title:"Dentist",             when:rel(2,8,15),  cat:"health" },
-    { id:6, title:"Sprint planning",     when:rel(3,10,0),  cat:"work" },
-    { id:7, title:"Dinner with Sam",     when:rel(3,19,30), cat:"social" },
-    { id:8, title:"Algorithms lecture",  when:rel(4,13,0),  cat:"study" },
-    { id:9, title:"Code review block",   when:rel(5,15,0),  cat:"work" },
-    { id:10,title:"Farmers market",      when:rel(6,9,0),   cat:"personal" },
-    { id:11,title:"Project deadline",    when:rel(8,17,0),  cat:"work" },
-    { id:12,title:"Weekend trip",        when:rel(10,7,0),  cat:"personal" },
-    { id:13,title:"Study group",         when:rel(-2,16,0), cat:"study" },
-    { id:14,title:"Retro",               when:rel(-3,15,30),cat:"work" }
-  ];
-  var nextId = 15;
+
+  // Events used to live only in this in-memory array, so every page
+  // reload silently threw away anything you'd added and reset back to
+  // the same sample list below. Now that sample list is only used ONCE,
+  // the very first time the calendar ever runs on this browser, as the
+  // starting point — after that, everything (adds and deletes) is read
+  // from and written straight back to localStorage, so it stays exactly
+  // as you left it, on whatever day you put it on, until you delete it.
+  var STORAGE_KEY = "allin1-calendar-events";
+
+  function seedEvents(){
+    return [
+      { id:1, title:"Team standup",        when:rel(0,9,30),  cat:"work" },
+      { id:2, title:"Design review",       when:rel(0,14,0),  cat:"work" },
+      { id:3, title:"Gym session",         when:rel(0,18,30), cat:"health" },
+      { id:4, title:"1:1 with manager",    when:rel(1,11,0),  cat:"work" },
+      { id:5, title:"Dentist",             when:rel(2,8,15),  cat:"health" },
+      { id:6, title:"Sprint planning",     when:rel(3,10,0),  cat:"work" },
+      { id:7, title:"Dinner with Sam",     when:rel(3,19,30), cat:"social" },
+      { id:8, title:"Algorithms lecture",  when:rel(4,13,0),  cat:"study" },
+      { id:9, title:"Code review block",   when:rel(5,15,0),  cat:"work" },
+      { id:10,title:"Farmers market",      when:rel(6,9,0),   cat:"personal" },
+      { id:11,title:"Project deadline",    when:rel(8,17,0),  cat:"work" },
+      { id:12,title:"Weekend trip",        when:rel(10,7,0),  cat:"personal" },
+      { id:13,title:"Study group",         when:rel(-2,16,0), cat:"study" },
+      { id:14,title:"Retro",               when:rel(-3,15,30),cat:"work" }
+    ];
+  }
+
+  function loadEvents(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return null;
+      return parsed.map(function(e){
+        return { id: e.id, title: e.title, when: new Date(e.when), cat: e.cat };
+      });
+    }catch(e){
+      return null; // storage blocked or corrupted — fall back to the seed list below
+    }
+  }
+
+  function saveEvents(){
+    try{
+      var plain = events.map(function(e){
+        return { id: e.id, title: e.title, when: e.when.toISOString(), cat: e.cat };
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(plain));
+    }catch(e){
+      // Storage unavailable (private browsing, quota, etc.) — the calendar
+      // still works for this session, it just won't persist across reloads.
+    }
+  }
+
+  var events = loadEvents();
+  if (!events){
+    events = seedEvents();
+    saveEvents(); // this browser's starting point, from now on
+  }
+
+  function nextEventId(){
+    var max = 0;
+    events.forEach(function(e){ if (e.id > max) max = e.id; });
+    return max + 1;
+  }
+
+  function deleteEvent(id){
+    events = events.filter(function(e){ return e.id !== id; });
+    saveEvents();
+    renderGrid();
+    if (selected) openPanel(selected);
+  }
+
   var hidden = {};
 
   function fmtTime(d){
@@ -245,7 +302,18 @@ document.addEventListener("DOMContentLoaded", function () {
         var b = document.createElement("b"); b.textContent = ev.title;
         var s = document.createElement("span");
         s.textContent = fmtTime(ev.when) + "  ·  " + ev.cat;
-        el.appendChild(b); el.appendChild(s);
+        var del = document.createElement("button");
+        del.type = "button";
+        del.className = "pev-delete";
+        del.setAttribute("aria-label", "Delete " + ev.title);
+        del.textContent = "×";
+        (function(id){
+          del.addEventListener("click", function(e){
+            e.stopPropagation();
+            deleteEvent(id);
+          });
+        })(ev.id);
+        el.appendChild(b); el.appendChild(s); el.appendChild(del);
         body.appendChild(el);
       });
     }
@@ -292,7 +360,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     var p = dv.split("-"), h = tv.split(":");
     var when = new Date(+p[0], +p[1]-1, +p[2], +h[0], +h[1]);
-    events.push({ id: nextId++, title: t, when: when, cat: cat });
+    events.push({ id: nextEventId(), title: t, when: when, cat: cat });
+    saveEvents();
     view = new Date(when.getFullYear(), when.getMonth(), 1);
     closeModal(); renderGrid(); openPanel(when);
   });
