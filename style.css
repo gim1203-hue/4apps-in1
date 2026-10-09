@@ -618,6 +618,58 @@ input,select,textarea{font:inherit}
 .website-pin-input{width:120px;padding:10px 12px;border-radius:10px;border:1px solid #333844;
   background:#1c1f27;color:#fff;font-size:16px;letter-spacing:4px;text-align:center}
 .website-pin-input:focus{outline:2px solid #ff6c3b;outline-offset:1px}
+
+/* ============================ SMALL SCREENS ============================ */
+@media(max-width:700px){
+  body{padding-bottom:112px}
+  .hub-nav{position:relative;top:auto;display:grid;grid-template-columns:1fr;gap:6px;padding:8px 12px}
+  .hub-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%;flex-basis:auto;
+    min-width:0;overflow:visible;padding-bottom:0}
+  .hub-tab{width:100%;min-width:0;min-height:44px;padding:8px 10px;border-radius:10px;
+    white-space:normal;line-height:1.2;text-align:left;justify-content:flex-start}
+  .view-calendar .side{inset:var(--hub-nav-h,60px) auto 0 0;height:auto}
+  .view-calendar .top{gap:8px;padding:12px}
+  .view-calendar .top h1{flex:1;min-width:0;margin:0}
+  .cal{padding:12px 8px 24px}
+  .dows,.grid{gap:3px}
+  .dows div{padding-left:1px;font-size:9px;letter-spacing:0;text-align:center}
+  .grid{grid-auto-rows:minmax(72px,auto)}
+  .cell{padding:4px 3px;gap:3px}
+  .ev{font-size:9px;padding:2px 3px;border-left-width:2px}
+  .view-weather{padding:14px 12px}
+  .view-weather h1{font-size:28px}
+  .view-weather .actions{flex-direction:column}
+  .view-weather .actions button{width:100%}
+  .view-weather .card{padding:20px 14px}
+  .view-weather .temp{font-size:52px}
+  .view-weather .forecast{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .view-radio .shell,.view-radio .topbar{width:calc(100% - 28px)}
+  .finder{padding:42px 0 52px}
+  .view-radio footer{padding:22px 14px}
+  .player{padding:9px 12px;grid-template-columns:42px minmax(0,1fr) auto;gap:8px}
+  .player-art{width:42px;height:42px}
+  .now-playing{max-width:100%}
+  .view-iwatch .wrap{padding:16px 12px 36px}
+  .view-iwatch .media-card{padding:14px;border-radius:14px}
+  .view-iwatch #youtube-search-input{flex-basis:100%;min-width:0}
+  .view-iwatch .youtube-toolbar button{flex:1 1 auto;justify-content:center;padding:11px 10px}
+  .view-iwatch .modal-backdrop{padding:12px}
+  .view-iwatch .modal{width:100%;max-height:calc(100dvh - 24px);padding:16px}
+  .view-iwatch .library-actions{justify-content:stretch}
+  .view-iwatch .library-actions button{flex:1 1 110px;justify-content:center}
+}
+
+@media(max-width:380px){
+  .hub-nav{padding-inline:8px}
+  .hub-tab{padding:8px 9px;font-size:12px}
+  .view-calendar .top{gap:6px;padding:10px 8px}
+  .grid{grid-auto-rows:minmax(64px,auto)}
+  .cell{padding:3px 2px}
+  .view-weather .forecast{grid-template-columns:1fr 1fr}
+  .player{padding-inline:8px;grid-template-columns:38px minmax(0,1fr) auto;gap:6px}
+  .player-art{width:38px;height:38px}
+  .player-controls button{width:30px}
+}
 .website-pin-submit{padding:10px 18px;border-radius:10px;font-weight:700;font-size:13.5px;
   background:#ff6c3b;color:#fff}
 .website-pin-submit:hover{background:#ff8256}
