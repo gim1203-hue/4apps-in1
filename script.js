@@ -1,4 +1,25 @@
 /* ============================== HUB NAV SWITCHING ============================== */
+// Shared bounded JSON requests. Credentials and response bodies stay out of errors.
+async function hubRequestJSON(url, options){
+  var opts = Object.assign({}, options || {});
+  var controller = new AbortController();
+  var parentSignal = opts.signal;
+  function cancel(){ controller.abort(); }
+  if(parentSignal){
+    if(parentSignal.aborted) cancel();
+    else parentSignal.addEventListener('abort', cancel, {once:true});
+  }
+  opts.signal = controller.signal;
+  var timer = setTimeout(cancel, 15000);
+  try{
+    var response = await fetch(url, opts);
+    if(!response.ok) throw new Error('Request failed (' + response.status + ').');
+    return await response.json();
+  }finally{
+    clearTimeout(timer);
+    if(parentSignal) parentSignal.removeEventListener('abort', cancel);
+  }
+}
 (function(){
   var tabs = document.querySelectorAll(".hub-tab");
   var views = document.querySelectorAll(".view");
@@ -176,7 +197,8 @@ document.addEventListener("DOMContentLoaded", function () {
         return { id: e.id, title: e.title, when: new Date(e.when), cat: e.cat };
       });
     }catch(e){
-      return null; // storage blocked or corrupted — fall back to the seed list below
+      showStorageNotice('Saved calendar events could not be read. Your calendar will work for this session; existing stored data has not been removed.');
+      return null;
     }
   }
 
@@ -186,12 +208,17 @@ document.addEventListener("DOMContentLoaded", function () {
         return { id: e.id, title: e.title, when: e.when.toISOString(), cat: e.cat };
       });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(plain));
+      document.getElementById('storage-notice').hidden = true;
     }catch(e){
-      // Storage unavailable (private browsing, quota, etc.) — the calendar
-      // still works for this session, it just won't persist across reloads.
+      showStorageNotice('Your event changes are available for this session, but could not be saved on this device. Keep this page open and check browser storage permissions.');
     }
   }
 
+  function showStorageNotice(message){
+    var notice = document.getElementById('storage-notice');
+    notice.textContent = message;
+    notice.hidden = false;
+  }
   var events = loadEvents();
   if (!events){
     events = seedEvents();
@@ -242,6 +269,7 @@ document.addEventListener("DOMContentLoaded", function () {
     for (var i = 0; i < 42; i++){
       var d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i);
       var cell = document.createElement("div");
+      cell.setAttribute('aria-label', 'Events on ' + d.toLocaleDateString('en', {weekday:'long',year:'numeric',month:'long',day:'numeric'}));
       cell.className = "cell"
         + (d.getMonth() !== view.getMonth() ? " mut" : "")
         + (sameDay(d, today) ? " today" : "");
@@ -290,6 +318,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + r*7 + c);
         var td = document.createElement("td");
         var sp = document.createElement("span");
+        sp.setAttribute('aria-label', 'Events on ' + d.toLocaleDateString('en', {year:'numeric',month:'long',day:'numeric'}));
         sp.textContent = d.getDate();
         if (d.getMonth() !== view.getMonth()) sp.className = "mut";
         if (sameDay(d, today)) sp.className = "today";
@@ -354,6 +383,9 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("f-time").value = "09:00";
     document.getElementById("f-title").value = "";
     document.getElementById("f-title").closest(".fw").classList.remove("bad");
+    document.getElementById('event-error').hidden = true;
+    document.getElementById('f-title').removeAttribute('aria-invalid');
+    document.getElementById('f-date').removeAttribute('aria-invalid');
     mask.classList.add("open"); modal.classList.add("open");
     document.getElementById("f-title").focus();
   }
@@ -378,6 +410,12 @@ document.addEventListener("DOMContentLoaded", function () {
     var tv = document.getElementById("f-time").value || "09:00";
     if (!t || !dv){
       document.getElementById("f-title").closest(".fw").classList.toggle("bad", !t);
+      var invalid = document.getElementById(!t ? 'f-title' : 'f-date');
+      invalid.setAttribute('aria-invalid', 'true');
+      var error = document.getElementById('event-error');
+      error.textContent = !t ? 'Enter an event title.' : 'Choose a date for your event.';
+      error.hidden = false;
+      invalid.focus();
       return;
     }
     var p = dv.split("-"), h = tv.split(":");
@@ -442,9 +480,18 @@ document.addEventListener("DOMContentLoaded", function () {
   var icon=function(c){ return c===0?'☀️':c<3?'⛅':c===3?'☁️':c<49?'🌫️':c<60?'🌦️':c<70?'🌧️':c<80?'❄️':c<90?'🌧️':'⛈️'; };
   var desc=function(c){ return c===0?'Clear':c<3?'Partly cloudy':c===3?'Overcast':c<49?'Foggy':c<60?'Drizzle':c<70?'Rain':c<80?'Snow':c<90?'Showers':'Thunderstorm'; };
   var esc=function(x){ var d=document.createElement('div'); d.textContent=x||''; return d.innerHTML; };
-  var get=async function(u){ var r=await fetch(u); if(!r.ok) throw Error(); return r.json(); };
+  var get=hubRequestJSON;
+  var weatherController = null, cityController = null, weatherSequence = 0, citySequence = 0;
+  var retry = $('#wx-retry'), retryAction = loadCountries;
+  function showWeatherError(message, action){
+    content.className = 'error'; content.textContent = message;
+    retryAction = action; retry.hidden = false;
+  }
+  retry.onclick = function(){ retry.hidden = true; retryAction(); };
 
   async function loadCountries(){
+    retry.hidden = true;
+    content.className = 'loading'; content.textContent = 'Loading world locations…';
     try{
       var response = await get('https://countriesnow.space/api/v0.1/countries/states');
       countryDirectory = response.data || [];
@@ -453,14 +500,18 @@ document.addEventListener("DOMContentLoaded", function () {
         .sort(function(a,b){ return a.name.common.localeCompare(b.name.common); });
       country.innerHTML = '<option value="">Choose a country</option>' +
         countries.map(function(x){ return '<option value="'+x.cca2+'">'+esc(x.name.common)+'</option>'; }).join('');
-      content.textContent = 'Choose a location to see live weather.';
+      content.className = ''; content.textContent = 'Choose a location to see live weather.';
     }catch(e){
-      content.className='error';
-      content.textContent='Could not load the world location list. Check your connection and refresh.';
+      showWeatherError('Could not load the world location list. Check your connection and try again.', loadCountries);
     }
   }
 
   async function loadStates(){
+    citySequence += 1;
+    if(cityController) cityController.abort();
+    weatherSequence += 1;
+    if(weatherController) weatherController.abort();
+    retry.hidden = true;
     state.disabled=true; city.disabled=true; $('#wx-show').disabled=true;
     city.innerHTML='<option>Select a state first</option>';
     var chosen = countries.find(function(x){ return x.cca2===country.value; });
@@ -481,41 +532,58 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function loadCities(){
+    var sequence = ++citySequence;
+    if(cityController) cityController.abort();
+    cityController = new AbortController();
+    weatherSequence += 1;
+    if(weatherController) weatherController.abort();
+    retry.hidden = true;
     city.disabled=true; $('#wx-show').disabled=true;
     city.innerHTML='<option>Loading cities&hellip;</option>';
     var chosen = countries.find(function(x){ return x.cca2===country.value; });
     try{
-      var r = await fetch('https://countriesnow.space/api/v0.1/countries/state/cities',{
+      var data = await get('https://countriesnow.space/api/v0.1/countries/state/cities',{
         method:'POST', headers:{'Content-Type':'application/json'},
+        signal: cityController.signal,
         body: JSON.stringify({country: chosen.name.common, state: state.value})
       });
-      if(!r.ok) throw Error();
-      var data = await r.json(), cities = data.data || [];
+      if(sequence !== citySequence) return;
+      var cities = data.data || [];
       if(!cities.length) throw Error();
       city.innerHTML='<option value="">Choose a city</option>'+cities.sort().map(function(x){ return '<option>'+esc(x)+'</option>'; }).join('');
       city.disabled=false;
       note.textContent='Choose a city, then view its live weather.';
     }catch(e){
+      if(sequence !== citySequence) return;
       var fallback = (chosen.capital && chosen.capital[0]) || state.value;
       city.innerHTML='<option value="'+esc(fallback)+'">'+esc(fallback)+'</option>';
       city.disabled=false; city.value=fallback; $('#wx-show').disabled=false;
-      note.textContent='City list is unavailable for this region. The main city is ready to use.';
+      note.textContent='City list is unavailable. You can try weather for the selected region.';
     }
   }
 
   async function showWeather(name){
+    var sequence = ++weatherSequence;
+    if(weatherController) weatherController.abort();
+    weatherController = new AbortController();
+    var options = {signal:weatherController.signal};
+    retry.hidden = true;
+    $('#wx-show').disabled = true;
     content.className='loading'; content.textContent='Loading live weather&hellip;';
     try{
       var chosen = countries.find(function(x){ return x.cca2===country.value; });
       var q = encodeURIComponent(name+', '+state.value+', '+((chosen && chosen.name.common) || ''));
-      var geo = await get('https://geocoding-api.open-meteo.com/v1/search?name='+q+'&count=1&language=en&format=json');
+      var geo = await get('https://geocoding-api.open-meteo.com/v1/search?name='+q+'&count=1&language=en&format=json', options);
       if(!(geo.results && geo.results[0])) throw Error();
       var p = geo.results[0];
-      var w = await get('https://api.open-meteo.com/v1/forecast?latitude='+p.latitude+'&longitude='+p.longitude+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto');
+      var w = await get('https://api.open-meteo.com/v1/forecast?latitude='+p.latitude+'&longitude='+p.longitude+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto', options);
+      if(sequence !== weatherSequence) return;
       render(p,w);
     }catch(e){
-      content.className='error';
-      content.textContent='Live weather could not be loaded for this location. Please try another city.';
+      if(sequence !== weatherSequence) return;
+      showWeatherError('Live weather could not be loaded for this location. Try again or choose another city.', function(){ showWeather(name); });
+    }finally{
+      if(sequence === weatherSequence) $('#wx-show').disabled = !city.value;
     }
   }
 
@@ -542,22 +610,44 @@ document.addEventListener("DOMContentLoaded", function () {
 
   country.onchange=loadStates;
   state.onchange=loadCities;
-  city.onchange=function(){ $('#wx-show').disabled=!city.value; };
+  city.onchange=function(){
+    weatherSequence += 1;
+    if(weatherController) weatherController.abort();
+    retry.hidden = true;
+    $('#wx-show').disabled=!city.value;
+  };
   $('#wx-show').onclick=function(){ showWeather(city.value); };
   $('#wx-nearby').onclick=function(){
-    if(!navigator.geolocation){ alert('Location is not supported in this browser.'); return; }
+    var nearby = $('#wx-nearby');
+    if(!navigator.geolocation){ showWeatherError('Location is not supported in this browser. Choose a country and city instead.', loadCountries); return; }
+    var sequence = ++weatherSequence;
+    if(weatherController) weatherController.abort();
+    weatherController = new AbortController();
+    nearby.disabled = true; retry.hidden = true;
+    content.className='loading'; content.textContent='Waiting for your location…';
     navigator.geolocation.getCurrentPosition(async function(x){
+      if(sequence !== weatherSequence){ nearby.disabled=false; return; }
       content.className='loading'; content.textContent='Loading weather near you&hellip;';
       try{
-        var w = await get('https://api.open-meteo.com/v1/forecast?latitude='+x.coords.latitude+'&longitude='+x.coords.longitude+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto');
+        var w = await get('https://api.open-meteo.com/v1/forecast?latitude='+x.coords.latitude+'&longitude='+x.coords.longitude+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto', {signal:weatherController.signal});
+        if(sequence !== weatherSequence) return;
         render({name:'Your location'}, w);
       }catch(e){
-        content.className='error';
-        content.textContent='Could not load weather for your location.';
+        if(sequence === weatherSequence) showWeatherError('Could not load weather for your location. Try again or select a city.', function(){ nearby.click(); });
+      }finally{
+        nearby.disabled = false;
       }
-    });
+    }, function(error){
+      nearby.disabled = false;
+      if(sequence !== weatherSequence) return;
+      var message = error.code === 1 ? 'Location permission was denied. Allow location access in your browser or select a city.' : error.code === 3 ? 'Finding your location took too long. Try again or select a city.' : 'Your location is unavailable. Try again or select a city.';
+      showWeatherError(message, function(){ nearby.click(); });
+    }, {timeout:10000, maximumAge:300000});
   };
-  loadCountries();
+  var weatherStarted = false;
+  function startWeather(){ if(!weatherStarted){ weatherStarted = true; loadCountries(); } }
+  document.querySelector('.hub-tab[data-view="weather"]').addEventListener('click', startWeather);
+  if(document.querySelector('.view-weather').classList.contains('active')) startWeather();
 })();
 
 /* ==================================== RADIO ==================================== */
@@ -580,9 +670,15 @@ document.addEventListener("DOMContentLoaded", function () {
   var hideMessage = function(){ message.hidden = true; };
   var stationText = function(station){ return ((station.tags || "") + " " + (station.name || "") + " " + (station.language || "")).toLowerCase(); };
 
-  async function getJSON(path){ var response = await fetch(API+path); if (!response.ok) throw new Error(); return response.json(); }
+  function getJSON(path, options){ return hubRequestJSON(API+path, options); }
+  var stationController = null, stationSequence = 0;
+  var radioRetry = document.createElement('button');
+  radioRetry.type = 'button'; radioRetry.className = 'retry-button'; radioRetry.textContent = 'Try again'; radioRetry.hidden = true;
+  message.after(radioRetry);
+  radioRetry.onclick = function(){ radioRetry.hidden = true; countrySelect.options.length > 1 && countrySelect.value ? loadStations() : loadCountries(); };
 
   async function loadCountries(){
+    radioRetry.hidden = true;
     try{
       var countries = await getJSON("/countries?order=name");
       var usable = countries.filter(function(country){ return country.iso_3166_1 && country.stationcount > 0; })
@@ -593,20 +689,30 @@ document.addEventListener("DOMContentLoaded", function () {
       document.querySelector("#directory-note").textContent = usable.length + " countries and regions are available in the live directory.";
     }catch(e){
       showMessage("We could not reach the live directory. Check your internet connection and try again.");
+      radioRetry.hidden = false;
     }
   }
 
   async function loadStations(){
-    var code = countrySelect.value; if (!code) return;
+    var sequence = ++stationSequence;
+    if(stationController) stationController.abort();
+    stationController = new AbortController();
+    radioRetry.hidden = true;
+    var code = countrySelect.value;
     allStations = []; page = 0; stationList.innerHTML = ""; loadMore.hidden = true;
+    count.textContent = '0 stations';
+    if(!code){ showMessage('Select a country or region to find live stations.'); return; }
     showMessage("Finding live stations…");
     try{
-      var stations = await getJSON("/stations/bycountrycodeexact/"+encodeURIComponent(code)+"?hidebroken=true&order=votes&reverse=true&limit=500");
+      var stations = await getJSON("/stations/bycountrycodeexact/"+encodeURIComponent(code)+"?hidebroken=true&order=votes&reverse=true&limit=500", {signal:stationController.signal});
+      if(sequence !== stationSequence) return;
       allStations = stations.filter(function(station){ return station.url_resolved || station.url; })
         .filter(function(station, index, array){ return array.findIndex(function(other){ return other.stationuuid === station.stationuuid; }) === index; });
       applyFilters();
     }catch(e){
+      if(sequence !== stationSequence) return;
       showMessage("Stations could not be loaded right now. Please choose the country again in a moment.");
+      radioRetry.hidden = false;
     }
   }
 
@@ -687,7 +793,10 @@ document.addEventListener("DOMContentLoaded", function () {
   });
   loadMore.addEventListener("click", function(){ page += 1; renderStations(); });
 
-  loadCountries();
+  var radioStarted = false;
+  function startRadio(){ if(!radioStarted){ radioStarted = true; loadCountries(); } }
+  radioTab.addEventListener('click', startRadio);
+  if(document.querySelector('.view-radio').classList.contains('active')) startRadio();
 
   function updateClock(){
     document.querySelector("#live-clock").textContent = new Intl.DateTimeFormat(undefined,{hour:"numeric",minute:"2-digit",second:"2-digit"}).format(new Date());
@@ -773,13 +882,14 @@ document.addEventListener("DOMContentLoaded", function () {
       const url = new URL(input);
       const host = url.hostname.replace(/^www\./,'');
       if(host==='youtu.be'){
-        return url.pathname.slice(1).split('/')[0] || null;
+        const id = url.pathname.slice(1).split('/')[0];
+        return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
       }
       if(host==='youtube.com' || host==='m.youtube.com' || host==='music.youtube.com'){
-        if(url.searchParams.get('v')) return url.searchParams.get('v');
+        if(url.searchParams.get('v')){ const id = url.searchParams.get('v'); return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null; }
         const parts = url.pathname.split('/').filter(Boolean);
         if(parts[0]==='embed' || parts[0]==='shorts' || parts[0]==='live'){
-          return parts[1] || null;
+          return /^[a-zA-Z0-9_-]{11}$/.test(parts[1] || '') ? parts[1] : null;
         }
       }
     } catch(e){ /* not a valid URL, and not a bare 11-char id either */ }
@@ -835,12 +945,14 @@ document.addEventListener("DOMContentLoaded", function () {
       const row = document.createElement('div');
       row.className = 'library-item';
       row.innerHTML = `
-        <img src="${item.thumb}" alt="" loading="lazy">
+        <img alt="" loading="lazy">
         <div class="li-meta">
           <div class="li-title">${escapeHtml(item.title)}</div>
           <div class="li-sub">${escapeHtml(item.channelTitle || '')}</div>
         </div>
         <button class="li-remove" type="button" title="Remove">✕</button>`;
+      row.querySelector('img').src = thumbFor(item.id);
+      row.querySelector('.li-remove').setAttribute('aria-label', 'Remove ' + item.title);
       row.querySelector('.li-remove').addEventListener('click', (e)=>{
         e.stopPropagation();
         state.library = state.library.filter(e2 => e2.id !== item.id);
@@ -924,13 +1036,22 @@ document.addEventListener("DOMContentLoaded", function () {
   yEls.libraryImportInput.addEventListener('change', ()=>{
     const file = yEls.libraryImportInput.files[0];
     if(!file) return;
+    if(file.size > 2 * 1024 * 1024){ alert('Choose a library file smaller than 2 MB. Your current Library has not been changed.'); yEls.libraryImportInput.value = ''; return; }
     const reader = new FileReader();
     reader.onload = ()=>{
       try{
         const data = JSON.parse(reader.result);
         const items = Array.isArray(data) ? data : (Array.isArray(data.items) ? data.items : null);
         if(!items) throw new Error('Unrecognized file format.');
-        const cleaned = items.filter(it => it && it.id && it.title).slice(0, LIBRARY_CAP);
+        const cleaned = items.filter(it => it && typeof it.id === 'string' && /^[a-zA-Z0-9_-]{11}$/.test(it.id) && typeof it.title === 'string' && it.title.trim())
+          .slice(0, LIBRARY_CAP).map(it => ({
+            id:it.id, title:it.title.slice(0,500),
+            channelTitle:typeof it.channelTitle === 'string' ? it.channelTitle.slice(0,300) : '',
+            channelId:typeof it.channelId === 'string' ? it.channelId.slice(0,100) : null,
+            thumb:thumbFor(it.id), addedAt:typeof it.addedAt === 'number' && Number.isFinite(it.addedAt) ? it.addedAt : Date.now()
+          }));
+        if(!cleaned.length) throw new Error('No valid YouTube songs were found. Your current Library has not been changed.');
+        if(cleaned.length < Math.min(items.length, LIBRARY_CAP)) alert('Some invalid records were skipped. Only valid YouTube songs will be imported.');
         if(!confirm(`Import ${cleaned.length} song(s)? This replaces your current Library.`)) return;
         state.library = cleaned;
         renderLibraryButton();
@@ -948,6 +1069,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /* ---------- YouTube IFrame Player API ---------- */
   let ytApiInjected = false;
+  let ytApiTimer = null;
   let ytApiReady = false;
   let ytPlayer = null;
   let pendingVideoId = null;
@@ -957,9 +1079,18 @@ document.addEventListener("DOMContentLoaded", function () {
     ytApiInjected = true;
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
+    function failed(){
+      clearTimeout(ytApiTimer);
+      ytApiInjected = false;
+      tag.remove();
+      yEls.screenHint.textContent = 'The YouTube player could not load. Check your connection, then select the video or search again.';
+    }
+    tag.onerror = failed;
+    ytApiTimer = setTimeout(function(){ if(!ytApiReady) failed(); },15000);
     document.head.appendChild(tag);
   }
   window.onYouTubeIframeAPIReady = function(){
+    clearTimeout(ytApiTimer);
     ytApiReady = true;
     if(pendingVideoId){
       const id = pendingVideoId;
@@ -1067,9 +1198,8 @@ document.addEventListener("DOMContentLoaded", function () {
     url.searchParams.set('part','snippet');
     url.searchParams.set('id', id);
     url.searchParams.set('key', state.apiKey);
-    const res = await fetch(url.toString());
-    const data = await res.json();
-    if(!res.ok || !data.items || !data.items.length) return null;
+    const data = await hubRequestJSON(url.toString());
+    if(!data.items || !data.items.length) return null;
     const s = data.items[0].snippet;
     return { title: s.title, channelTitle: s.channelTitle, channelId: s.channelId };
   }
@@ -1109,6 +1239,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function fetchSuggestions(query){
+    const reqId = ++suggestReqId;
     const key = query.toLowerCase();
     if(suggestCache.has(key)){
       renderSuggestions(suggestCache.get(key));
@@ -1118,7 +1249,6 @@ document.addEventListener("DOMContentLoaded", function () {
       renderDropdownNote('🔑 Add an API key above to see live suggestions.');
       return;
     }
-    const reqId = ++suggestReqId;
     renderDropdownNote('Searching…');
     try{
       const url = new URL('https://www.googleapis.com/youtube/v3/search');
@@ -1127,13 +1257,8 @@ document.addEventListener("DOMContentLoaded", function () {
       url.searchParams.set('maxResults','8');
       url.searchParams.set('q', query);
       url.searchParams.set('key', state.apiKey);
-      const res = await fetch(url.toString());
-      const data = await res.json();
+      const data = await hubRequestJSON(url.toString());
       if(reqId !== suggestReqId) return;
-      if(!res.ok){
-        renderDropdownNote((data.error && data.error.message) || 'Search failed.');
-        return;
-      }
       const items = data.items || [];
       suggestCache.set(key, items);
       renderSuggestions(items);
@@ -1257,9 +1382,8 @@ document.addEventListener("DOMContentLoaded", function () {
     url.searchParams.set('part','contentDetails');
     url.searchParams.set('id', channelId);
     url.searchParams.set('key', state.apiKey);
-    const res = await fetch(url.toString());
-    const data = await res.json();
-    if(!res.ok || !data.items || !data.items.length){
+    const data = await hubRequestJSON(url.toString());
+    if(!data.items || !data.items.length){
       uploadsPlaylistCache.set(channelId, null);
       return null;
     }
@@ -1275,9 +1399,7 @@ document.addEventListener("DOMContentLoaded", function () {
     url.searchParams.set('playlistId', playlistId);
     if(pageToken) url.searchParams.set('pageToken', pageToken);
     url.searchParams.set('key', state.apiKey);
-    const res = await fetch(url.toString());
-    const data = await res.json();
-    if(!res.ok) throw new Error((data.error && data.error.message) || `Request failed (${res.status})`);
+    const data = await hubRequestJSON(url.toString());
     return data;
   }
 
@@ -1384,7 +1506,11 @@ document.addEventListener("DOMContentLoaded", function () {
     updateNavButtons();
   }
 
+  let searchController = null, searchSequence = 0;
   async function searchYouTube(query, opts={}){
+    const sequence = ++searchSequence;
+    if(searchController) searchController.abort();
+    searchController = new AbortController();
     if(!state.apiKey){
       setKeyStatus('Add a YouTube API key to search, or paste a video link/ID directly.', 'err');
       yEls.apiKeyPanel.hidden = false;
@@ -1399,9 +1525,8 @@ document.addEventListener("DOMContentLoaded", function () {
       url.searchParams.set('maxResults','12');
       url.searchParams.set('q', query);
       url.searchParams.set('key', state.apiKey);
-      const res = await fetch(url.toString());
-      const data = await res.json();
-      if(!res.ok) throw new Error((data.error && data.error.message) || `Search failed (${res.status})`);
+      const data = await hubRequestJSON(url.toString(), {signal:searchController.signal});
+      if(sequence !== searchSequence) return;
       const items = data.items || [];
       renderResults(items);
       if(opts.autoplay){
@@ -1414,7 +1539,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
     } catch(err){
-      yEls.resultsGrid.innerHTML = `<div class="status-msg">Couldn't search: ${err.message}</div>`;
+      if(sequence !== searchSequence) return;
+      yEls.resultsGrid.innerHTML = `<div class="status-msg">Couldn't search: ${escapeHtml(err.message)} Try again using Search.</div>`;
       if(opts.autoplay) yEls.screenHint.textContent = "Couldn't search: " + err.message;
     }
   }
@@ -1428,13 +1554,12 @@ document.addEventListener("DOMContentLoaded", function () {
     url.searchParams.set('api_key', TMDB_KEY);
     url.searchParams.set('query', query);
     url.searchParams.set('include_adult', 'false');
-    const res = await fetch(url.toString());
-    const data = await res.json();
-    if(!res.ok) throw new Error((data.status_message) || `TMDb search failed (${res.status})`);
+    const data = await hubRequestJSON(url.toString());
     return (data.results || []).filter(it => it.media_type === 'movie' || it.media_type === 'tv');
   }
 
   function renderTMDbResults(items){
+    yEls.tmdbLabel.textContent = 'Movies & TV — click one to play its trailer';
     yEls.tmdbGrid.innerHTML = '';
     yEls.tmdbLabel.style.display = items.length ? '' : 'none';
     items.slice(0, 18).forEach(it=>{
@@ -1459,14 +1584,19 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  let tmdbSequence = 0;
   async function searchTMDbAndRender(query){
+    const sequence = ++tmdbSequence;
     try{
       const items = await searchTMDb(query);
+      if(sequence !== tmdbSequence) return;
       renderTMDbResults(items);
     }catch(err){
+      if(sequence !== tmdbSequence) return;
       yEls.tmdbGrid.innerHTML = '';
       yEls.tmdbLabel.style.display = 'none';
-      // TMDb being unreachable shouldn't block YouTube results — fail quietly.
+      yEls.tmdbLabel.textContent = 'Movie and TV results are unavailable right now. YouTube results are still available; use Search to try again.';
+      yEls.tmdbLabel.style.display = '';
     }
   }
 
@@ -1475,7 +1605,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if(!raw) return;
     closeDropdown();
     const videoId = extractVideoId(raw);
-    if(videoId){ yEls.resultsGrid.innerHTML = ''; yEls.tmdbGrid.innerHTML = ''; yEls.tmdbLabel.style.display = 'none'; loadVideo(videoId); return; }
+    if(videoId){
+      searchSequence++; tmdbSequence++;
+      if(searchController) searchController.abort();
+      yEls.resultsGrid.innerHTML = ''; yEls.tmdbGrid.innerHTML = ''; yEls.tmdbLabel.style.display = 'none'; loadVideo(videoId); return;
+    }
     closeFlyout();
     addSearchHistory(raw);
     searchYouTube(raw, { autoplay: true });

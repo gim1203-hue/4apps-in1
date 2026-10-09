@@ -680,6 +680,48 @@ button,a,input,select,textarea{touch-action:manipulation}
 .website-pin-error[hidden]{display:none}
 
 /* Responsive usability: keep existing views and branding. */
+.skip-link{position:fixed;left:12px;top:-100px;z-index:1100;background:#fff;color:#12141a;padding:14px;border-radius:10px;font-weight:700}
+.skip-link:focus{top:12px}
+.hub-intro{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px max(22px,calc((100% - 1180px)/2));background:#f8f9fc;border-bottom:1px solid #e4e7ec}
+.hub-eyebrow{margin:0 0 6px;color:#4b5bd7;font-size:11px;font-weight:800;letter-spacing:.13em}
+.hub-intro h2{margin:0;font-size:clamp(20px,3vw,28px);letter-spacing:-.035em;line-height:1.2}
+.hub-intro-note{margin:7px 0 0;color:#576174;font-size:14px;line-height:1.5}
+.directory-toggle{flex-shrink:0;min-height:44px;padding:12px 18px;background:#12141a;color:#fff;border-radius:12px;font-size:14px;font-weight:700}
+.directory-toggle span{margin-left:12px;color:#ff9c7c}
+.directory-toggle:hover{background:#2b303d}
+.app-directory{padding:24px max(22px,calc((100% - 1180px)/2)) 32px;background:#f8f9fc;border-bottom:1px solid #e4e7ec}
+.app-directory[hidden],.app-card[hidden],.directory-empty[hidden],.retry-button[hidden],.form-error[hidden],.storage-notice[hidden]{display:none}
+.directory-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+.directory-heading h2{font-size:22px;margin:0;letter-spacing:-.025em}
+.directory-heading button{min-height:44px;padding:10px;color:#576174;font-size:14px}
+.directory-search{display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:700;max-width:540px}
+.directory-search input{width:100%;padding:14px 16px;border:1px solid #cdd3df;background:#fff;border-radius:12px;font-size:16px;color:#1a1d23}
+.directory-filters{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.directory-filters button{min-height:44px;padding:10px 15px;border:1px solid #d8dde7;background:#fff;border-radius:999px;font-size:13px;color:#485369}
+.directory-filters button[aria-pressed=true]{background:#4b5bd7;color:#fff;border-color:#4b5bd7}
+.directory-count{color:#576174;font-size:13px;margin:18px 0 12px}
+.app-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.app-card{display:flex;flex-direction:column;align-items:flex-start;text-align:left;min-width:0;gap:10px;padding:20px;border:1px solid #e0e4ed;border-radius:16px;background:#fff;box-shadow:0 2px 5px #1a1d2304;transition:transform .15s,box-shadow .15s,border-color .15s}
+.app-card:hover{transform:translateY(-2px);border-color:#a3adef;box-shadow:0 7px 20px #4b5bd710}
+.app-card-name{font-weight:750;font-size:16px;line-height:1.4;overflow-wrap:anywhere}
+.app-card-description{font-size:13px;line-height:1.5;color:#576174;flex:1}
+.app-card-status{font-size:11px;font-weight:700;color:#4b5bd7;background:#eef0fd;padding:5px 8px;border-radius:6px}
+.directory-empty{padding:24px;background:#fff;border:1px dashed #cdd3df;border-radius:12px;line-height:1.5;color:#576174}
+.storage-notice{margin:0;padding:12px 20px;background:#fff3dc;color:#704507;font-size:14px;line-height:1.5}
+.form-error{margin:0;color:#a22626;font-size:13px;line-height:1.5}
+.retry-button{min-height:44px;padding:11px 18px;background:#fff;color:#3e4cbc;border:1px solid #ccc;border-radius:10px;margin-top:12px;font-weight:700}
+.view-calendar .sw{display:inline-block;min-height:36px;min-width:36px}
+.hub-tab[aria-current=true]{border-color:#8c96ee}
+@media(max-width:940px){.app-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){
+  .hub-intro{padding:18px 12px;align-items:flex-start;flex-direction:column;gap:14px}
+  .hub-intro-note{font-size:13px}
+  .directory-toggle{width:100%;text-align:left;display:flex;justify-content:space-between}
+  .app-directory{padding:18px 12px 24px}
+  .app-cards{grid-template-columns:1fr}
+  .app-card{padding:16px}
+  .directory-heading h2{font-size:19px}
+}
 .view-radio footer{padding:26px 22px}
 .controls{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
 .controls label,.hero>*{min-width:0}
@@ -687,14 +729,17 @@ button,a,input,select,textarea{touch-action:manipulation}
 .hub-tab,.today-btn,.newbtn,.macts button,.actions button{min-height:44px}
 .view-calendar .nav button,.burger,.ph button,.station button,
 .player-controls button,.website-pin-close{min-width:44px;min-height:44px}
-.view-calendar .modal{max-height:calc(100dvh - 32px);overflow-y:auto;z-index:220}
-.view-calendar .mask{z-index:210}
+.view-calendar .modal{max-height:calc(100dvh - 32px);overflow-y:auto;z-index:300}
+.view-calendar .panel:not(.open){visibility:hidden}
+.view-calendar .mask{z-index:290}
 .website-pin-modal{max-height:calc(100dvh - 32px);overflow-y:auto}
 .view-calendar .side{overflow-y:auto}
 .view-iwatch .youtube-toolbar>*{min-width:0;max-width:100%}
 .view-iwatch .modal{max-height:calc(100dvh - 32px);overflow-y:auto}
+.view-iwatch .modal-backdrop{z-index:300}
 @media(max-width:940px){
   .hero{grid-template-columns:1fr;gap:32px;padding:40px 0}
+  .view-calendar .side:not(.open){visibility:hidden}
   .world-card{max-width:390px}
   .hub-nav{position:sticky;top:0;display:flex;flex-wrap:wrap;padding:8px 12px;gap:8px}
   .hub-brand{flex:1}

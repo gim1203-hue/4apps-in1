@@ -6,8 +6,8 @@ const { chromium } = require(process.argv[2] || 'playwright');
 const root = path.resolve(__dirname, '..');
 const server = http.createServer((req, res) => {
   const name = req.url.split('?')[0] === '/' ? 'index.html' : req.url.split('?')[0].slice(1);
-  if (!['index.html', 'style.css', 'script.js'].includes(name)) { res.writeHead(404); return res.end(); }
-  res.setHeader('Content-Type', { 'index.html': 'text/html', 'style.css': 'text/css', 'script.js': 'text/javascript' }[name]);
+  if (!['index.html', 'style.css', 'script.js', 'hub.js'].includes(name)) { res.writeHead(404); return res.end(); }
+  res.setHeader('Content-Type', { 'index.html': 'text/html', 'style.css': 'text/css', 'script.js': 'text/javascript', 'hub.js': 'text/javascript' }[name]);
   res.end(fs.readFileSync(path.join(root, name)));
 });
 (async () => {
@@ -28,6 +28,14 @@ const server = http.createServer((req, res) => {
         assert(size.actual <= size.viewport + 1, `${width}px ${view} overflows: ${JSON.stringify(size)}`);
       }
       await checkOverflow('calendar');
+      await page.click('#directory-toggle');
+      assert.equal(await page.locator('.app-card').count(), await page.locator('.hub-tab').count());
+      await checkOverflow('app directory');
+      await page.fill('#directory-search','weather');
+      assert.equal(await page.locator('.app-card:visible').count(),1);
+      await page.locator('.app-card:visible').click();
+      assert(await page.locator('[data-view-panel="weather"]').isVisible());
+      await page.click('.hub-tab[data-view="calendar"]');
       if (width <= 940) {
         await page.click('#apps-menu-toggle');
         assert.equal(await page.getAttribute('#apps-menu-toggle', 'aria-expanded'), 'true');
@@ -42,6 +50,8 @@ const server = http.createServer((req, res) => {
         await page.click('#new-btn');
       }
       await page.fill('#f-title', 'Responsive regression event');
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await page.evaluate(() => document.activeElement.id),'save');
       await page.fill('#f-date', '2026-10-09');
       await page.click('#save');
       assert.equal(await page.locator('#modal').evaluate(el => el.classList.contains('open')), false);
@@ -59,5 +69,10 @@ const server = http.createServer((req, res) => {
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
     assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior), 'auto');
     console.log('PASS reduced motion');
+    await page.setViewportSize({width:812,height:375});
+    await page.click('#burger'); await page.click('#new-btn');
+    await page.fill('#f-title','Landscape regression event'); await page.click('#save');
+    assert.equal(await page.locator('#modal').evaluate(el=>el.classList.contains('open')),false);
+    console.log('PASS landscape dialog remains usable above the radio player');
   } finally { await browser.close(); server.close(); }
 })().catch(e => { console.error(e); server.close(); process.exitCode = 1; });

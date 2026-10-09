@@ -3,12 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Calendar, live weather and worldwide live radio, in one app.">
+<meta name="description" content="MyAllHub brings your calendar, live weather, worldwide radio, games, learning tools and connected apps together in one convenient place.">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<link rel="canonical" href="https://myallhub.com/">
+<meta property="og:title" content="MyAllHub — Your apps, together">
+<meta property="og:description" content="Plan your day, check the weather, listen to radio and explore your connected apps.">
+<meta property="og:url" content="https://myallhub.com/">
+<meta property="og:type" content="website">
 <meta name="theme-color" content="#12141a">
-<title>My Apps — Calendar · Weather · Radio</title>
+<title>MyAllHub — Calendar, Weather, Radio &amp; Apps</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<a class="skip-link" href="#hub-content">Skip to apps</a>
 
 <!-- ============================== HUB NAV ============================== -->
 <header class="hub-nav">
@@ -48,6 +55,21 @@
    
   </nav>
 </header>
+
+<section class="hub-intro" aria-label="App directory">
+  <div><p class="hub-eyebrow">MYALLHUB</p><h2>Your everyday apps, together.</h2><p class="hub-intro-note">Plan, listen, learn and explore — all from one place.</p></div>
+  <button class="directory-toggle" id="directory-toggle" type="button" aria-expanded="false" aria-controls="app-directory">Browse apps <span aria-hidden="true">&#8599;</span></button>
+</section>
+<section class="app-directory" id="app-directory" aria-labelledby="directory-title" hidden>
+  <div class="directory-heading"><h2 id="directory-title">Find your next app</h2><button id="directory-close" type="button" aria-label="Close app directory">Close &#215;</button></div>
+  <label class="directory-search">Search apps<input id="directory-search" type="search" placeholder="Try weather, games or learning" autocomplete="off"></label>
+  <div class="directory-filters" id="directory-filters" role="group" aria-label="App categories"></div>
+  <p class="directory-count" id="directory-count" role="status"></p>
+  <div class="app-cards" id="app-cards"></div>
+  <p class="directory-empty" id="directory-empty" hidden>No apps match your search. Try another name or choose All apps.</p>
+</section>
+<div id="hub-content" tabindex="-1"></div>
+<p class="storage-notice" id="storage-notice" role="status" hidden></p>
 
 <!-- ============================== CALENDAR VIEW ============================== -->
 <div class="view view-calendar active" data-view-panel="calendar">
@@ -90,7 +112,7 @@
           <button id="next" aria-label="Next month">&rsaquo;</button>
         </div>
         <button class="today-btn" id="today-btn">Today</button>
-        <div class="search"><input id="q" type="search" placeholder="Search events..."></div>
+        <div class="search"><input id="q" type="search" placeholder="Search events..." aria-label="Search calendar events"></div>
       </div>
 
       <div class="cal">
@@ -111,9 +133,10 @@
   </div>
 
   <div class="mask" id="mask"></div>
-  <div class="modal" id="modal">
-    <h2>New event</h2>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
+    <h2 id="event-modal-title">New event</h2>
     <div class="f">
+      <p class="form-error" id="event-error" role="alert" hidden></p>
       <div class="fw"><label for="f-title">Title</label><input id="f-title" placeholder="What is it?"></div>
       <div class="row">
         <div><label for="f-date">Date</label><input id="f-date" type="date"></div>
@@ -153,7 +176,8 @@
       </div>
       <p class="note" id="wx-note">Choose a country, then a state/region and city. Weather updates live from Open-Meteo.</p>
     </section>
-    <div id="wx-content" class="loading">Loading world locations&hellip;</div>
+    <div id="wx-content" class="loading" role="status" aria-live="polite">Loading world locations&hellip;</div>
+    <button id="wx-retry" class="retry-button" type="button" hidden>Try again</button>
   </main>
 </div>
 
@@ -265,9 +289,9 @@
   </div>
 
   <div class="modal-backdrop" id="libraryBackdrop">
-    <div class="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="library-title">
       <div class="library-modal-header">
-        <h3>&#128193; Your Library</h3>
+        <h3 id="library-title">&#128193; Your Library</h3>
         <span id="library-count-label" class="widget-subtext" style="margin:0;">0 / 1000 saved</span>
       </div>
       <div id="library-list" class="library-list"></div>
@@ -311,9 +335,9 @@
 
 <!-- ============================== WEBSITE TAB — PIN GATE ============================== -->
 <div class="website-pin-overlay" id="website-pin-overlay" hidden>
-  <div class="website-pin-modal">
+  <div class="website-pin-modal" role="dialog" aria-modal="true" aria-labelledby="website-pin-label">
     <button class="website-pin-close" id="website-pin-close" type="button" aria-label="Close">&times;</button>
-    <p class="website-pin-label">&#128274; Enter the 4-digit PIN to continue</p>
+    <p class="website-pin-label" id="website-pin-label">&#128274; Enter the 4-digit PIN to continue</p>
     <div class="website-pin-row">
       <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" id="website-pin-input" class="website-pin-input" aria-label="4-digit PIN">
       <button type="button" id="website-pin-submit" class="website-pin-submit">Unlock</button>
@@ -323,5 +347,6 @@
 </div>
 
 <script src="script.js" defer></script>
+<script src="hub.js" defer></script>
 </body>
 </html>

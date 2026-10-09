@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://myallhub.com/sitemap.xml
