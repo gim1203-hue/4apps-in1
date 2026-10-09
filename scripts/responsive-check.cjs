@@ -13,7 +13,7 @@ const server = http.createServer((req, res) => {
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   console.log('Launching browser');
-  const browser = await chromium.launch({ channel: 'chromium', timeout: 20000 });
+  const browser = await chromium.launch({ channel: process.env.TEST_BROWSER || 'msedge', timeout: 20000 });
   try {
     for (const width of [320, 375, 390, 768, 1024, 1440]) {
       const page = await browser.newPage({ viewport: { width, height: 850 } });

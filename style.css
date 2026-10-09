@@ -621,11 +621,6 @@ button,a,input,select,textarea{touch-action:manipulation}
 .website-pin-input{width:120px;padding:10px 12px;border-radius:10px;border:1px solid #333844;
   background:#1c1f27;color:#fff;font-size:16px;letter-spacing:4px;text-align:center}
 .website-pin-input:focus{outline:2px solid #ff6c3b;outline-offset:1px}
-.website-pin-submit{padding:10px 18px;border-radius:10px;font-weight:700;font-size:13.5px;
-  background:#ff6c3b;color:#fff}
-.website-pin-submit:hover{background:#ff8256}
-.website-pin-error{margin:12px 0 0;font-size:12.5px;color:#ff6c6c;text-align:center}
-.website-pin-error[hidden]{display:none}
 
 /* ============================ SMALL SCREENS ============================ */
 @media(max-width:700px){
@@ -678,8 +673,17 @@ button,a,input,select,textarea{touch-action:manipulation}
   .player-art{width:38px;height:38px}
   .player-controls button{width:30px}
 }
+.website-pin-submit{padding:10px 18px;border-radius:10px;font-weight:700;font-size:13.5px;
+  background:#ff6c3b;color:#fff}
+.website-pin-submit:hover{background:#ff8256}
+.website-pin-error{margin:12px 0 0;font-size:12.5px;color:#ff6c6c;text-align:center}
+.website-pin-error[hidden]{display:none}
 
 /* Responsive usability: keep existing views and branding. */
+.view-radio footer{padding:26px 22px}
+.controls{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+.controls label,.hero>*{min-width:0}
+.hero{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)}
 .hub-tab,.today-btn,.newbtn,.macts button,.actions button{min-height:44px}
 .view-calendar .nav button,.burger,.ph button,.station button,
 .player-controls button,.website-pin-close{min-width:44px;min-height:44px}
@@ -690,16 +694,19 @@ button,a,input,select,textarea{touch-action:manipulation}
 .view-iwatch .youtube-toolbar>*{min-width:0;max-width:100%}
 .view-iwatch .modal{max-height:calc(100dvh - 32px);overflow-y:auto}
 @media(max-width:940px){
+  .hero{grid-template-columns:1fr;gap:32px;padding:40px 0}
+  .world-card{max-width:390px}
   .hub-nav{position:sticky;top:0;display:flex;flex-wrap:wrap;padding:8px 12px;gap:8px}
   .hub-brand{flex:1}
   .apps-menu-toggle{display:block;min-height:44px;padding:8px 14px;border:1px solid #555d6d;border-radius:10px;color:#fff}
-  .hub-tabs{flex:0 0 100%;width:100%;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;gap:6px;padding-bottom:4px}
+  .hub-tabs{display:flex;flex:0 0 100%;width:100%;min-width:0;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;gap:6px;padding-bottom:4px}
   .hub-tab{flex:0 0 auto;width:auto;white-space:nowrap}
   .hub-nav.apps-menu-open .hub-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:45dvh;overflow-y:auto;overflow-x:hidden}
   .hub-nav.apps-menu-open .hub-tab{white-space:normal;text-align:left;overflow-wrap:anywhere}
   .view-calendar .side{top:var(--hub-nav-h,112px);height:calc(100dvh - var(--hub-nav-h,112px) - var(--player-h,106px))}
 }
 @media(max-width:560px){
+  .controls{grid-template-columns:1fr}
   input,select,textarea,.f input,.f select,.view-calendar .search input,
   .controls select,.controls input{font-size:16px}
   .view-calendar .top{padding:12px;gap:8px}
