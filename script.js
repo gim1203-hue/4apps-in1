@@ -417,7 +417,18 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   var burger = document.getElementById("burger"), side = document.getElementById("side");
-  if (burger) burger.addEventListener("click", function(){ side.classList.toggle("open"); });
+  if (burger) {
+    burger.setAttribute("aria-controls", "side");
+    burger.setAttribute("aria-expanded", "false");
+    function closeSide(){ side.classList.remove("open"); burger.setAttribute("aria-expanded", "false"); }
+    burger.addEventListener("click", function(){
+      burger.setAttribute("aria-expanded", String(side.classList.toggle("open")));
+    });
+    document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeSide(); });
+    document.addEventListener("click", function(e){
+      if(!side.contains(e.target) && !burger.contains(e.target)) closeSide();
+    });
+  }
 
   renderGrid();
 });
@@ -1486,4 +1497,32 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   renderLibraryButton();
+})();
+
+/* Mobile app navigation and space for the persistent radio player. */
+(function(){
+  var nav = document.querySelector('.hub-nav');
+  var toggle = document.getElementById('apps-menu-toggle');
+  var tabs = document.getElementById('hub-tabs');
+  function closeMenu(){
+    nav.classList.remove('apps-menu-open');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+  toggle.addEventListener('click', function(){
+    toggle.setAttribute('aria-expanded', String(nav.classList.toggle('apps-menu-open')));
+  });
+  tabs.addEventListener('click', function(e){ if(e.target.closest('.hub-tab')) closeMenu(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && nav.classList.contains('apps-menu-open')){ closeMenu(); toggle.focus(); }
+  });
+  document.addEventListener('click', function(e){ if(!nav.contains(e.target)) closeMenu(); });
+  var player = document.querySelector('.player');
+  function syncPlayer(){
+    var height = player.getBoundingClientRect().height;
+    document.documentElement.style.setProperty('--player-h', height + 'px');
+    document.body.style.paddingBottom = (height + 16) + 'px';
+  }
+  syncPlayer();
+  if(window.ResizeObserver) new ResizeObserver(syncPlayer).observe(player);
+  else window.addEventListener('resize', syncPlayer);
 })();
